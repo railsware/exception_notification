@@ -2,11 +2,26 @@ require 'action_dispatch'
 require 'exception_notifier/notifier'
 
 class ExceptionNotifier
-  def self.default_ignore_exceptions
-    [].tap do |exceptions|
-      exceptions << ActiveRecord::RecordNotFound if defined? ActiveRecord
-      exceptions << AbstractController::ActionNotFound if defined? AbstractController
-      exceptions << ActionController::RoutingError if defined? ActionController
+  class << self
+    def default_ignore_exceptions
+      [].tap do |exceptions|
+        exceptions << ActiveRecord::RecordNotFound if defined? ActiveRecord
+        exceptions << AbstractController::ActionNotFound if defined? AbstractController
+        exceptions << ActionController::RoutingError if defined? ActionController
+      end
+    end
+  
+    def background_options
+      @background_options ||= Rails.application.middleware.find {|klass| klass == ExceptionNotifier }.args.first rescue {}
+    end
+  
+    def with(&block)
+      block.call
+    rescue Exception => exception
+      unless Array.wrap(background_options[:ignore_exceptions]).include?(exception.class)
+        Notifier.background_exception_notification(exception).deliver
+      end
+      raise exception
     end
   end
 

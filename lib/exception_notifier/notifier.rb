@@ -58,17 +58,24 @@ class ExceptionNotifier
       end
     end
     
-    def background_exception_notification(exception)
+    def background_exception_notification(exception, options = {})
       @exception  = exception
       @options    = ExceptionNotifier.background_options.reverse_merge(self.class.default_options)
       @kontroller = MissingController.new
       @backtrace  = clean_backtrace(exception)
-      @sections   = %w(backtrace)
-      
-      subject  = "#{@options[:email_prefix]} (#{@exception.class}) #{@exception.message.inspect}"
-        
+      @sections   = %w(data backtrace)
+
+      prefix = "#{@options[:email_prefix]}#{options[:name] || '[background]'}"
+      subject = "#{prefix} (#{@exception.class}) #{@exception.message.inspect}"
+
+      (options[:files] || []).each do |path|
+        attachments[File.basename(path)] = File.read(path)
+      end
+
+      @data = options[:data] || {}
+
       mail(:to => @options[:exception_recipients], :from => @options[:sender_address], :subject => subject) do |format|
-        format.text { render "#{mailer_name}/exception_notification" }
+        format.text { render "#{mailer_name}/exception_notification", :layout => false }
       end
     end
 

@@ -12,14 +12,14 @@ class ExceptionNotifier
     end
   
     def background_options
-      @background_options ||= Rails.application.middleware.find {|klass| klass == ExceptionNotifier }.args.first rescue {}
+      @background_options ||= Rails.application.middleware.find { |klass| klass == ExceptionNotifier }.args.first rescue {}
     end
   
-    def with(&block)
+    def with(options = {}, &block)
       block.call
     rescue Exception => exception
       unless Array.wrap(background_options[:ignore_exceptions]).include?(exception.class)
-        Notifier.background_exception_notification(exception).deliver
+        Notifier.background_exception_notification(exception, options).deliver
       end
       raise exception
     end

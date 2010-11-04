@@ -71,7 +71,32 @@ Using:
   ExceptionNotifier.with do
     some code...
   end
-    
+
+  ExceptionNotifier.with({
+    :name  => 'MyDaemon',
+    :data  => { :username => "david" },
+    :files => [ "path/to/screenshot.png" ]
+  }) do
+    some code...
+  end
+
+  begin
+   some code...
+  rescue => e
+   ExceptionNotifier::Notifier.background_exception_notification(e).deliver
+  end
+
+  begin
+   some code...
+  rescue => e
+   screenshot_file = make_screenshot!
+
+    ExceptionNotifier::Notifier.background_exception_notification(e, {
+      :name      => "MyDaemon",
+      :files     => [ screenshot_file ]
+    }).deliver
+  end
+
 == Rails 2.3 stable and earlier
 
 If you are running Rails 2.3 then see the branch for that: 

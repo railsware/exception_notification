@@ -16,6 +16,25 @@ shared_examples_for "ExceptionNotifier::Notifier as mailer" do
 end
 
 describe ExceptionNotifier::Notifier do
+  describe ".exception_notification" do
+    before(:each) do
+      begin 1/0
+      rescue => e
+        @exception = e
+      end
+    end
+    
+    it 'should have subject with message' do
+      mail = ExceptionNotifier::Notifier.exception_notification({'rack.input' => '', 'exception_notifier.options' => {:sections => []}}, @exception)
+      mail.subject.should == "[ERROR] # (ZeroDivisionError) \"divided by 0\""
+    end
+
+    it 'should have subject without message' do
+      mail = ExceptionNotifier::Notifier.exception_notification({'rack.input' => '', 'exception_notifier.options' => {:sections => [], :verbose_subject => false}}, @exception)
+      mail.subject.should == "[ERROR] # (ZeroDivisionError)"
+    end
+
+  end
 
   describe "with background_exception_notification method" do
     before(:each) do
